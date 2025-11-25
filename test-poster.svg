@@ -1,0 +1,11 @@
+
+    <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="300" fill="#667eea"/>
+      <text x="200" y="150" text-anchor="middle" fill="white" font-size="24" font-family="Arial">
+        Test Poster #1
+      </text>
+      <text x="200" y="180" text-anchor="middle" fill="white" font-size="16" font-family="Arial">
+        by Test Artist
+      </text>
+    </svg>
+  
