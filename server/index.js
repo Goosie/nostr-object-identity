@@ -102,10 +102,29 @@ app.post('/api/objects', upload.single('image'), handleMulterError, async (req, 
       return res.status(400).json({ error: 'No image file provided' })
     }
 
-    const { name, artist, type = 'poster', description = '' } = req.body
+    const { name, artist, type = 'poster', description = '', customPhysicalId = '' } = req.body
 
     if (!name || !artist) {
       return res.status(400).json({ error: 'Name and artist are required' })
+    }
+
+    // Check for duplicate custom physical ID if provided
+    if (customPhysicalId && customPhysicalId.trim()) {
+      const trimmedCustomId = customPhysicalId.trim()
+      const existingObjectId = physicalIdDatabase.get(trimmedCustomId)
+      if (existingObjectId) {
+        const existingObject = objectDatabase.get(existingObjectId)
+        return res.status(409).json({
+          error: 'Physical ID already exists',
+          message: `The physical ID "${trimmedCustomId}" is already used by another object: "${existingObject?.name || 'Unknown'}" by ${existingObject?.artist || 'Unknown'}`,
+          existingObject: {
+            id: existingObjectId,
+            name: existingObject?.name,
+            artist: existingObject?.artist,
+            type: existingObject?.type
+          }
+        })
+      }
     }
 
     // Process image
@@ -191,7 +210,8 @@ app.post('/api/objects', upload.single('image'), handleMulterError, async (req, 
       name,
       artist,
       type,
-      description
+      description,
+      customPhysicalId: customPhysicalId.trim() || null
     }, uniqueId)
 
     // Generate QR code certificate (legacy)
@@ -262,7 +282,8 @@ app.post('/api/objects', upload.single('image'), handleMulterError, async (req, 
         qrCode: physicalVerification.qrCode,
         printableText: physicalVerification.printableText,
         certificateUrl: `/api/physical-certificates/${uniqueId}`,
-        verificationMethods: physicalVerification.verificationMethods
+        verificationMethods: physicalVerification.verificationMethods,
+        isCustomId: physicalVerification.isCustomId
       }
     })
 

@@ -5,7 +5,8 @@ function CreateObject({ onObjectCreated }) {
     name: '',
     artist: '',
     type: 'poster',
-    description: ''
+    description: '',
+    customPhysicalId: ''
   })
   const [selectedFile, setSelectedFile] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -90,6 +91,9 @@ function CreateObject({ onObjectCreated }) {
       formDataToSend.append('artist', formData.artist)
       formDataToSend.append('type', formData.type)
       formDataToSend.append('description', formData.description)
+      if (formData.customPhysicalId.trim()) {
+        formDataToSend.append('customPhysicalId', formData.customPhysicalId.trim())
+      }
 
       const response = await fetch('/api/objects', {
         method: 'POST',
@@ -174,15 +178,29 @@ function CreateObject({ onObjectCreated }) {
           {result.data.physicalVerification && (
             <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
               <h5>🏷️ Physical Verification IDs</h5>
+              {result.data.physicalVerification.isCustomId && (
+                <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#d4edda', borderRadius: '4px', color: '#155724' }}>
+                  ✅ <strong>Custom ID Used:</strong> Your provided identifier is now the primary physical ID!
+                </div>
+              )}
               <div style={{ fontFamily: 'monospace', fontSize: '14px' }}>
-                <p><strong>Full Physical ID:</strong> <code>{result.data.physicalVerification.physicalId}</code></p>
-                <p><strong>Short ID:</strong> <code>{result.data.physicalVerification.shortId}</code></p>
+                <p><strong>Primary Physical ID:</strong> <code>{result.data.physicalVerification.physicalId}</code></p>
+                {result.data.physicalVerification.shortId !== result.data.physicalVerification.physicalId && (
+                  <p><strong>Short ID:</strong> <code>{result.data.physicalVerification.shortId}</code></p>
+                )}
                 <p><strong>Numeric ID:</strong> <code>{result.data.physicalVerification.numericId}</code></p>
               </div>
               <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '10px' }}>
-                💡 These IDs can be used to verify the object without taking a photo. 
-                Print them on a sticker and attach to the back of your object.
+                💡 {result.data.physicalVerification.isCustomId 
+                  ? 'Users can verify this object by entering your custom ID (like ISBN number or poster title).' 
+                  : 'These IDs can be used to verify the object without taking a photo. Print them on a sticker and attach to the back of your object.'
+                }
               </p>
+              {result.data.physicalVerification.isCustomId && (
+                <p style={{ fontSize: '0.85rem', color: '#28a745', marginTop: '5px' }}>
+                  🎯 <strong>Perfect for verification!</strong> Users can simply enter "{result.data.physicalVerification.physicalId}" to verify this object.
+                </p>
+              )}
             </div>
           )}
           
@@ -282,6 +300,38 @@ function CreateObject({ onObjectCreated }) {
             <option value="sculpture">Sculpture</option>
             <option value="other">Other</option>
           </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="customPhysicalId">
+            Physical ID (Optional)
+            <small style={{ display: 'block', color: '#666', fontWeight: 'normal', marginTop: '4px' }}>
+              {formData.type === 'book' && 'Enter ISBN number (e.g., 978-0-123456-78-9)'}
+              {formData.type === 'poster' && 'Enter poster title or catalog number'}
+              {formData.type === 'art' && 'Enter artwork catalog number or title'}
+              {formData.type === 'sculpture' && 'Enter sculpture name or catalog number'}
+              {formData.type === 'other' && 'Enter any unique identifier for this object'}
+            </small>
+          </label>
+          <input
+            type="text"
+            id="customPhysicalId"
+            name="customPhysicalId"
+            value={formData.customPhysicalId}
+            onChange={handleInputChange}
+            placeholder={
+              formData.type === 'book' ? 'ISBN: 978-0-123456-78-9' :
+              formData.type === 'poster' ? 'Poster title or catalog #' :
+              formData.type === 'art' ? 'Artwork catalog # or title' :
+              formData.type === 'sculpture' ? 'Sculpture name or catalog #' :
+              'Unique identifier'
+            }
+            style={{ fontFamily: 'monospace' }}
+          />
+          <small style={{ color: '#888', fontSize: '0.85em', marginTop: '4px', display: 'block' }}>
+            💡 If provided, this will be used as the primary physical ID instead of generating a random one.
+            This makes verification much easier - users can simply enter the ISBN or title to verify the object.
+          </small>
         </div>
 
         <div className="form-group">

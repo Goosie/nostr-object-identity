@@ -131,7 +131,20 @@ export class PhysicalIdentifier {
   // Generate multiple verification methods
   async generateVerificationMethods(objectData, objectId) {
     try {
-      const physicalIdentifier = this.generatePhysicalId(objectData)
+      let physicalIdentifier
+      
+      // Use custom physical ID if provided, otherwise generate random one
+      if (objectData.customPhysicalId) {
+        const customId = objectData.customPhysicalId.trim()
+        physicalIdentifier = {
+          physicalId: customId,
+          shortId: customId.length > 16 ? customId.substring(0, 16) : customId,
+          numericId: this.extractNumericId(customId)
+        }
+      } else {
+        physicalIdentifier = this.generatePhysicalId(objectData)
+      }
+      
       const qrCode = await this.generatePhysicalQR(physicalIdentifier.physicalId, objectId)
       const certificate = await this.generatePhysicalCertificate(objectData, physicalIdentifier.physicalId, qrCode.qrCodeDataURL)
 
@@ -145,15 +158,30 @@ export class PhysicalIdentifier {
         certificate,
         verificationMethods: {
           qr_scan: `Scan QR code with any QR reader`,
-          manual_entry: `Enter ID: ${physicalIdentifier.shortId}`,
+          manual_entry: `Enter ID: ${physicalIdentifier.physicalId}`,
+          short_entry: physicalIdentifier.shortId !== physicalIdentifier.physicalId ? `Enter short ID: ${physicalIdentifier.shortId}` : null,
           numeric_entry: `Enter numeric ID: ${physicalIdentifier.numericId}`,
           url_visit: `Visit: /verify-physical/${physicalIdentifier.physicalId}`
-        }
+        },
+        isCustomId: !!objectData.customPhysicalId
       }
     } catch (error) {
       console.error('Error generating verification methods:', error)
       throw error
     }
+  }
+
+  // Extract or generate a numeric ID from any string
+  extractNumericId(inputString) {
+    // Try to extract existing numbers from the string
+    const numbers = inputString.replace(/\D/g, '')
+    if (numbers.length >= 6) {
+      return numbers.substring(0, 8)
+    }
+    
+    // If not enough numbers, generate from hash
+    const hash = crypto.createHash('sha256').update(inputString).digest('hex')
+    return parseInt(hash.substring(0, 8), 16).toString().substring(0, 8)
   }
 
   // Extract physical ID from QR code scan
