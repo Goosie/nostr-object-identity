@@ -280,7 +280,7 @@ function VerifyObject() {
                 <div className="grid">
                   <div>
                     <img 
-                      src={result.object.imagePath ? `/api/images/${result.object.id}.jpg` : '/placeholder.jpg'}
+                      src={result.object.imageUrl || result.object.thumbnailUrl || '/placeholder.jpg'}
                       alt={result.object.name}
                       className="object-image"
                     />
